@@ -25,10 +25,9 @@ See doc/log_contexts.rst for details on how this works.
 import inspect
 import logging
 import threading
-import types
 import typing
 import warnings
-from typing import TYPE_CHECKING, Any, Coroutine, Optional, Tuple, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Optional, Tuple, TypeVar, Union
 
 import attr
 from typing_extensions import Literal

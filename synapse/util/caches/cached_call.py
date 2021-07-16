@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Awaitable, Callable, Generic, Optional, TypeVar, Union, cast
+from typing import Awaitable, Callable, Generic, Optional, TypeVar, Union
 
 from twisted.internet import defer
 from twisted.internet.defer import Deferred
-from twisted.python import failure
 from twisted.python.failure import Failure
 
 from synapse.logging.context import make_deferred_yieldable, run_in_background
