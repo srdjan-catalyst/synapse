@@ -65,9 +65,9 @@ class CachedCall(Generic[TV]):
             f: The underlying function. Only one call to this function will be alive
                 at once (per instance of CachedCall)
         """
-        self._callable = f  # type: Optional[Callable[[], Awaitable[TV]]]
-        self._deferred = None  # type: Optional[Deferred]
-        self._failure = None  # type: Union[None, Failure]
+        self._callable: Optional[Callable[[], Awaitable[TV]]] = f
+        self._deferred: Optional[Deferred] = None
+        self._failure: Union[None, Failure] = None
 
     async def get(self) -> TV:
         """Kick off the call if necessary, and return the result"""
