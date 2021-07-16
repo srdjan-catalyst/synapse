@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import enum
 from typing import Awaitable, Callable, Generic, Optional, TypeVar, Union
 
 from twisted.internet import defer
@@ -21,6 +21,10 @@ from twisted.python.failure import Failure
 from synapse.logging.context import make_deferred_yieldable, run_in_background
 
 TV = TypeVar("TV")
+
+
+class _Sentinel(enum.Enum):
+    sentinel = object()
 
 
 class CachedCall(Generic[TV]):
@@ -56,7 +60,7 @@ class CachedCall(Generic[TV]):
     CachedCall object.
     """
 
-    __slots__ = ["_callable", "_deferred", "_result", "_failure"]
+    __slots__ = ["_callable", "_deferred", "_result"]
 
     def __init__(self, f: Callable[[], Awaitable[TV]]):
         """
@@ -66,7 +70,7 @@ class CachedCall(Generic[TV]):
         """
         self._callable: Optional[Callable[[], Awaitable[TV]]] = f
         self._deferred: Optional[Deferred] = None
-        self._failure: Union[None, Failure] = None
+        self._result: Union[_Sentinel, TV, Failure] = _Sentinel.sentinel
 
     async def get(self) -> TV:
         """Kick off the call if necessary, and return the result"""
@@ -78,12 +82,14 @@ class CachedCall(Generic[TV]):
             # we will never need the callable again, so make sure it can be GCed
             self._callable = None
 
-            def got_fail(f):
-                self._failure = f
+            # once the deferred completes, store the result. We cannot simply leave the
+            # result in the deferred, since `awaiting` a deferred destroys its result.
+            # (Also, if it's a Failure, GCing the deferred would log a critical error
+            # about unhandled Failures)
+            def got_result(r):
+                self._result = r
 
-            # catch failures here (otherwise we will get critical errors about unhandled
-            # failures)
-            self._deferred.addErrback(got_fail)
+            self._deferred.addBoth(got_result)
 
         # TODO: consider cancellation semantics. Currently, if the call to get()
         #    is cancelled, the underlying call will continue (and any future calls
@@ -92,15 +98,17 @@ class CachedCall(Generic[TV]):
         #    and any eventual exception may not be reported.
 
         # we can now await the deferred, and once it completes, return the result.
-        result = await make_deferred_yieldable(self._deferred)
+        await make_deferred_yieldable(self._deferred)
 
-        if self._failure:
+        assert not isinstance(self._result, _Sentinel)
+        if isinstance(self._result, Failure):
             # I *think* this is the easiest way to correctly raise a Failure without
             # having to gut-wrench into the implementation of Deferred.
-            d = defer.fail(self._failure)
-            return await d
+            d = defer.fail(self._result)
+            await d
+            assert False, "unexpected return from await on failure"
 
-        return result
+        return self._result
 
 
 class RetryOnExceptionCachedCall(Generic[TV]):
