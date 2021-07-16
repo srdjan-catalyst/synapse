@@ -107,8 +107,9 @@ times_pruned_extremities = Counter(
 _PersistResult = TypeVar("_PersistResult")
 
 
-@attr.s(auto_attribs=True, slots=True)
+@attr.s(auto_attribs=True)
 class _EventPersistQueueItem(Generic[_PersistResult]):
+    __slots__ = ["events_and_contexts", "backfilled", "deferred"]
     events_and_contexts: List[Tuple[EventBase, EventContext]]
     backfilled: bool
     deferred: ObservableDeferred[_PersistResult]
