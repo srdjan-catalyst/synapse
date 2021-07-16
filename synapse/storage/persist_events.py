@@ -104,21 +104,20 @@ times_pruned_extremities = Counter(
     "Number of times we were actually be able to prune extremities",
 )
 
+_PersistResult = TypeVar("_PersistResult")
+
 
 @attr.s(auto_attribs=True, slots=True)
-class _EventPersistQueueItem:
+class _EventPersistQueueItem(Generic[_PersistResult]):
     events_and_contexts: List[Tuple[EventBase, EventContext]]
     backfilled: bool
-    deferred: ObservableDeferred
+    deferred: ObservableDeferred[_PersistResult]
 
     parent_opentracing_span_contexts: List = attr.ib(factory=list)
     """A list of opentracing spans waiting for this batch"""
 
     opentracing_span_context: Any = None
     """The opentracing span under which the persistence actually happened"""
-
-
-_PersistResult = TypeVar("_PersistResult")
 
 
 class _EventPeristenceQueue(Generic[_PersistResult]):
@@ -138,7 +137,9 @@ class _EventPeristenceQueue(Generic[_PersistResult]):
         The per_item_callback will be called for each item added via add_to_queue,
         and its result will be returned via the Deferreds returned from add_to_queue.
         """
-        self._event_persist_queues: Dict[str, Deque[_EventPersistQueueItem]] = {}
+        self._event_persist_queues: Dict[
+            str, Deque[_EventPersistQueueItem[_PersistResult]]
+        ] = {}
         self._currently_persisting_rooms: Set[str] = set()
         self._per_item_callback = per_item_callback
 
@@ -170,9 +171,11 @@ class _EventPeristenceQueue(Generic[_PersistResult]):
             end_item = queue[-1]
         else:
             # need to make a new queue item
-            deferred = ObservableDeferred(defer.Deferred(), consumeErrors=True)
+            deferred = ObservableDeferred[_PersistResult](
+                defer.Deferred(), consumeErrors=True
+            )
 
-            end_item = _EventPersistQueueItem(
+            end_item = _EventPersistQueueItem[_PersistResult](
                 events_and_contexts=[],
                 backfilled=backfilled,
                 deferred=deferred,

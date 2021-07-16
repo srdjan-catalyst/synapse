@@ -112,7 +112,7 @@ class _NotifierUserStream:
         self.last_notified_ms = time_now_ms
 
         with PreserveLoggingContext():
-            self.notify_deferred = ObservableDeferred(defer.Deferred())
+            self.notify_deferred = ObservableDeferred[StreamToken](defer.Deferred())
 
     def notify(
         self,

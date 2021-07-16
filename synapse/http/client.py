@@ -845,9 +845,8 @@ class _ReadBodyWithMaxSizeProtocol(protocol.Protocol):
             self.deferred.errback(reason)
 
 
-def read_body_with_max_size(
-    response: IResponse, stream: ByteWriteable, max_size: Optional[int]
-) -> defer.Deferred:
+def read_body_with_max_size(response, stream, max_size):
+    # type: (IResponse, ByteWriteable, Optional[int])->defer.Deferred[int]
     """
     Read a HTTP response body to a file-object. Optionally enforcing a maximum file size.
 
@@ -862,7 +861,7 @@ def read_body_with_max_size(
     Returns:
         A Deferred which resolves to the length of the read body.
     """
-    d = defer.Deferred()
+    d = defer.Deferred()  # type: defer.Deferred[int]
 
     # If the Content-Length header gives a size larger than the maximum allowed
     # size, do not bother downloading the body.

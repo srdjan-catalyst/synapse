@@ -13,7 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import logging
-from typing import TYPE_CHECKING, Any, Generator, Iterable, List, Optional, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Generator,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    cast,
+)
 
 from twisted.internet import defer
 from twisted.web.resource import IResource
@@ -23,7 +33,7 @@ from synapse.http.client import SimpleHttpClient
 from synapse.http.site import SynapseRequest
 from synapse.logging.context import make_deferred_yieldable, run_in_background
 from synapse.storage.state import StateFilter
-from synapse.types import JsonDict, UserID, create_requester
+from synapse.types import JsonDict, StateMap, UserID, create_requester
 
 if TYPE_CHECKING:
     from synapse.server import HomeServer
@@ -358,10 +368,10 @@ class ModuleApi:
             new_user=new_user,
         )
 
-    @defer.inlineCallbacks
+    @defer.inlineCallbacks  # type: ignore
     def get_state_events_in_room(
         self, room_id: str, types: Iterable[Tuple[str, Optional[str]]]
-    ) -> Generator[defer.Deferred, Any, defer.Deferred]:
+    ) -> Generator[defer.Deferred, Any, Iterable[EventBase]]:
         """Gets current state events for the given room.
 
         (This is exposed for compatibility with the old SpamCheckerApi. We should
@@ -376,12 +386,20 @@ class ModuleApi:
             twisted.internet.defer.Deferred[list(synapse.events.FrozenEvent)]:
                 The filtered state events in the room.
         """
-        state_ids = yield defer.ensureDeferred(
-            self._store.get_filtered_current_state_ids(
-                room_id=room_id, state_filter=StateFilter.from_types(types)
-            )
+        state_ids = cast(
+            StateMap[str],
+            (
+                yield defer.ensureDeferred(
+                    self._store.get_filtered_current_state_ids(
+                        room_id=room_id, state_filter=StateFilter.from_types(types)
+                    )
+                )
+            ),
         )
-        state = yield defer.ensureDeferred(self._store.get_events(state_ids.values()))
+        state = cast(
+            Dict[str, EventBase],
+            (yield defer.ensureDeferred(self._store.get_events(state_ids.values()))),
+        )
         return state.values()
 
     async def create_and_send_event_into_room(self, event_dict: JsonDict) -> EventBase:
