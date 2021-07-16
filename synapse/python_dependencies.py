@@ -63,7 +63,7 @@ REQUIREMENTS = [
     # testing twisted 21.7
     "Twisted>=21.7.0rc1",
     "Twisted[tls]>=21.7.0rc1",
-    "treq>=15.1",
+    "treq>=17.8",
     # Twisted has required pyopenssl 16.0 since about Twisted 16.6.
     "pyopenssl>=16.0.0",
     "pyyaml>=3.11",
