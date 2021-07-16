@@ -106,7 +106,7 @@ class CachedCall(Generic[TV]):
             # having to gut-wrench into the implementation of Deferred.
             d = defer.fail(self._result)
             await d
-            assert False, "unexpected return from await on failure"
+            raise AssertionError("unexpected return from await on failure")
 
         return self._result
 
