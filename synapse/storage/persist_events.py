@@ -109,7 +109,6 @@ _PersistResult = TypeVar("_PersistResult")
 
 @attr.s(auto_attribs=True)
 class _EventPersistQueueItem(Generic[_PersistResult]):
-    __slots__ = ["events_and_contexts", "backfilled", "deferred"]
     events_and_contexts: List[Tuple[EventBase, EventContext]]
     backfilled: bool
     deferred: ObservableDeferred[_PersistResult]
