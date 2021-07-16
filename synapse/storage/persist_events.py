@@ -171,9 +171,9 @@ class _EventPeristenceQueue(Generic[_PersistResult]):
             end_item = queue[-1]
         else:
             # need to make a new queue item
-            deferred = ObservableDeferred[_PersistResult](
+            deferred = ObservableDeferred(
                 defer.Deferred(), consumeErrors=True
-            )
+            )  # type: ObservableDeferred[_PersistResult]
 
             end_item = _EventPersistQueueItem[_PersistResult](
                 events_and_contexts=[],
